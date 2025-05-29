@@ -2,6 +2,7 @@ import { useState } from "react";
 import ContainerScene from "./ContainerScene";
 import type { BoxInput, PlacedBox } from "./PackingLogic";
 import { calculatePacking } from "./PackingLogic";
+import * as XLSX from "xlsx";
 
 export default function App() {
   const [container, setContainer] = useState({
@@ -20,6 +21,11 @@ export default function App() {
   };
 
   const handleExport = () => {
+    if (packedBoxes.length === 0) {
+      alert("No boxes packed yet.");
+      return;
+    }
+
     const exportData = {
       container,
       items,
