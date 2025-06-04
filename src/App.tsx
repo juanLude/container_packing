@@ -2,14 +2,18 @@ import { useState } from "react";
 import ContainerScene from "./ContainerScene";
 import type { BoxInput, PlacedBox } from "./PackingLogic";
 import { calculatePacking } from "./PackingLogic";
-import * as XLSX from "xlsx";
+import { exportPackingResultsToExcel } from "./utils/exportToExcel";
+import { exportPackingResultsToJson } from "./utils/exportToJson";
+import ExportDropdown from "./components/ExportDropdown";
 
 export default function App() {
+  // State to hold container dimensions, items, and packed boxes
   const [container, setContainer] = useState({
     length: 100,
     width: 100,
     height: 100,
   });
+  // Initial items with default dimensions and quantity
   const [items, setItems] = useState<BoxInput[]>([
     { length: 20, width: 20, height: 20, quantity: 3 },
   ]);
@@ -20,26 +24,28 @@ export default function App() {
     setPackedBoxes(packed);
   };
 
+  // Function to export packing results as JSON
   const handleExport = () => {
     if (packedBoxes.length === 0) {
       alert("No boxes packed yet.");
       return;
     }
 
-    const exportData = {
-      container,
-      items,
-      packedBoxes,
-    };
-    const blob = new Blob([JSON.stringify(exportData, null, 2)], {
-      type: "application/json",
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "packing-results.json";
-    a.click();
-    URL.revokeObjectURL(url);
+    // Ask the user which format they want
+    const formatInput = prompt("Export format: type 'json' or 'excel'");
+
+    // User pressed Cancel => do nothing
+    if (!formatInput) return;
+
+    const format = formatInput.trim().toLowerCase();
+
+    if (format === "json") {
+      exportPackingResultsToJson(container, items, packedBoxes);
+    } else if (format === "excel") {
+      exportPackingResultsToExcel(container, items, packedBoxes);
+    } else {
+      alert("Invalid format. Please type 'json' or 'excel'.");
+    }
   };
 
   return (
@@ -156,6 +162,11 @@ export default function App() {
         >
           Export Results
         </button>
+        <ExportDropdown
+          container={container}
+          items={items}
+          packedBoxes={packedBoxes}
+        />
       </div>
 
       <ContainerScene container={container} boxes={packedBoxes} />

@@ -3,12 +3,13 @@
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 
+// This file defines the 3D scene for visualizing the container and packed boxes.
 interface Container {
   length: number;
   width: number;
   height: number;
 }
-
+// This interface defines the structure of a box with its dimensions and position in 3D space.
 interface Box {
   length: number;
   width: number;
@@ -18,7 +19,9 @@ interface Box {
   z: number;
   color: string;
 }
-
+// This component renders a 3D scene with a container and packed boxes using React Three Fiber.
+// It uses the Canvas component to create a 3D canvas and OrbitControls for camera movement.
+// The container is represented as a wireframe box, and each packed box is rendered with its respective dimensions and color.
 export default function ContainerScene({
   container,
   boxes,
@@ -30,14 +33,14 @@ export default function ContainerScene({
     <div className="h-[500px] border rounded bg-gray-100">
       <Canvas
         camera={{
-          position: [container.length, container.width, container.height],
-          fov: 50,
+          position: [container.length, container.width, container.height], // Set initial camera position based on container dimensions
+          fov: 50, // Field of view for the camera
         }}
       >
-        <ambientLight />
-        <pointLight position={[100, 100, 100]} />
-        <OrbitControls />
-
+        <ambientLight /> // Ambient light to illuminate the scene
+        <pointLight position={[100, 100, 100]} /> // Point light to add depth
+        and shadows
+        <OrbitControls /> // Controls for orbiting around the scene
         {/* Container Outline */}
         <mesh
           position={[
@@ -51,8 +54,8 @@ export default function ContainerScene({
           />
           <meshBasicMaterial color="white" wireframe />
         </mesh>
-
         {/* Packed Boxes */}
+        // Iterate over the boxes array to render each box in the scene
         {boxes.map((box, idx) => (
           <mesh
             key={idx}
@@ -62,8 +65,10 @@ export default function ContainerScene({
               box.y + box.width / 2,
             ]}
           >
-            <boxGeometry args={[box.length, box.height, box.width]} />
-            <meshStandardMaterial color={box.color} />
+            <boxGeometry args={[box.length, box.height, box.width]} /> // Create
+            a box geometry with the specified dimensions
+            <meshStandardMaterial color={box.color} /> // Use a standard
+            material for the box with the specified color
           </mesh>
         ))}
       </Canvas>
