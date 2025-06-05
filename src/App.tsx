@@ -2,8 +2,7 @@ import { useState } from "react";
 import ContainerScene from "./ContainerScene";
 import type { BoxInput, PlacedBox } from "./PackingLogic";
 import { calculatePacking } from "./PackingLogic";
-import { exportPackingResultsToExcel } from "./utils/exportToExcel";
-import { exportPackingResultsToJson } from "./utils/exportToJson";
+
 import ExportDropdown from "./components/ExportDropdown";
 
 export default function App() {
@@ -24,32 +23,8 @@ export default function App() {
     setPackedBoxes(packed);
   };
 
-  // Function to export packing results as JSON
-  const handleExport = () => {
-    if (packedBoxes.length === 0) {
-      alert("No boxes packed yet.");
-      return;
-    }
-
-    // Ask the user which format they want
-    const formatInput = prompt("Export format: type 'json' or 'excel'");
-
-    // User pressed Cancel => do nothing
-    if (!formatInput) return;
-
-    const format = formatInput.trim().toLowerCase();
-
-    if (format === "json") {
-      exportPackingResultsToJson(container, items, packedBoxes);
-    } else if (format === "excel") {
-      exportPackingResultsToExcel(container, items, packedBoxes);
-    } else {
-      alert("Invalid format. Please type 'json' or 'excel'.");
-    }
-  };
-
   return (
-    <div className="p-4">
+    <div className="w-full min-h-screen overflow-y-auto p-4">
       <h1 className="text-xl font-bold mb-4">Container Packing App</h1>
 
       <div className="grid grid-cols-2 gap-4 mb-4">
@@ -156,12 +131,12 @@ export default function App() {
           Pack Container
         </button>
 
-        <button
+        {/* <button
           onClick={handleExport}
           className="bg-gray-700 text-white px-4 py-2 rounded"
         >
           Export Results
-        </button>
+        </button> */}
         <ExportDropdown
           container={container}
           items={items}
@@ -169,7 +144,12 @@ export default function App() {
         />
       </div>
 
-      <ContainerScene container={container} boxes={packedBoxes} />
+      <div className="mt-6 border p-4 rounded bg-white shadow">
+        <h2 className="text-lg font-semibold mb-2">Packed Container Preview</h2>
+        <div className="w-full min-h-[800px]">
+          <ContainerScene container={container} boxes={packedBoxes} />
+        </div>
+      </div>
     </div>
   );
 }

@@ -30,8 +30,9 @@ export default function ContainerScene({
   boxes: Box[];
 }) {
   return (
-    <div className="h-[500px] border rounded bg-gray-100">
+    <div className="w-full min-h-[800px] border rounded bg-gray-100">
       <Canvas
+        style={{ background: "#f0f0f0", width: "100%", height: "500px" }}
         camera={{
           position: [container.length, container.width, container.height], // Set initial camera position based on container dimensions
           fov: 50, // Field of view for the camera
