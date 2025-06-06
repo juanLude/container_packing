@@ -25,7 +25,8 @@ a:hover {
 body {
   margin: 0;
   padding: 2rem;
-  width: 100%;
+  max-width: 100vw; /* Prevents page from stretching wider than viewport */
+  overflow-x: hidden; /* Hides horizontal scrollbar */
   height: auto;
   background-color: #ffffff;
 }

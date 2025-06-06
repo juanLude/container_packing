@@ -4,7 +4,7 @@ import type { BoxInput, PlacedBox } from "./PackingLogic";
 import { calculatePacking } from "./PackingLogic";
 
 import ExportDropdown from "./components/ExportDropdown";
-
+import StandardSizes from "./components/StandardSizes";
 export default function App() {
   // State to hold container dimensions, items, and packed boxes
   const [container, setContainer] = useState({
@@ -29,10 +29,10 @@ export default function App() {
 
       <div className="grid grid-cols-2 gap-4 mb-4">
         <div>
-          <h2 className="font-semibold mb-2">Container Dimensions</h2>
+          <StandardSizes setContainer={setContainer} container={container} />
           <input
             type="number"
-            placeholder="Length"
+            placeholder="Length (cm)"
             value={container.length}
             onChange={(e) =>
               setContainer({ ...container, length: Number(e.target.value) })
@@ -113,7 +113,7 @@ export default function App() {
             onClick={() =>
               setItems([
                 ...items,
-                { length: 10, width: 10, height: 10, quantity: 1 },
+                { length: 1, width: 1, height: 10, quantity: 1 },
               ])
             }
             className="bg-blue-500 text-white px-2 py-1 mt-2 rounded"
