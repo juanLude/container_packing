@@ -44,11 +44,11 @@ export default function StandardSizes({
 
   return (
     <div className="mb-8">
-      <h2 className="text-lg font-bold mb-3 text-center">
+      <h3 className="text-sm font-semibold mb-2 text-center">
         Standard Container Sizes (metres)
-      </h2>
+      </h3>
 
-      <table className="table-auto w-full border border-gray-400 border-collapse text-sm text-center rounded overflow-hidden shadow-sm">
+      <table className="table-auto w-3/4 mx-auto border border-gray-300 border-collapse text-xs text-center rounded-md shadow-sm">
         <thead className="bg-gray-100 text-gray-700">
           <tr>
             {["Type", "Length", "Width", "Height", "Volume (m³)"].map(
@@ -79,22 +79,24 @@ export default function StandardSizes({
                   setSelectedType(c.type);
                 }}
                 className={`cursor-pointer transition-colors hover:bg-gray-200 ${
-                  isSelected ? "bg-blue-100 font-semibold" : ""
+                  isSelected
+                    ? "bg-blue-200 text-blue-900 font-semibold ring-2 ring-blue-400"
+                    : ""
                 }`}
               >
-                <td className="border border-gray-400 px-3 py-2 text-center">
+                <td className="border border-gray-300 px-2 py-1 text-center">
                   {c.type}
                 </td>
-                <td className="border border-gray-400 px-3 py-2 text-center">
+                <td className="border border-gray-300 px-2 py-1 text-center">
                   {c.length}
                 </td>
-                <td className="border border-gray-400 px-3 py-2 text-center">
+                <td className="border border-gray-300 px-2 py-1 text-center">
                   {c.width}
                 </td>
-                <td className="border border-gray-400 px-3 py-2 text-center">
+                <td className="border border-gray-300 px-2 py-1 text-center">
                   {c.height}
                 </td>
-                <td className="border border-gray-400 px-3 py-2 text-center">
+                <td className="border border-gray-300 px-2 py-1 text-center">
                   {(c.length * c.width * c.height).toFixed(2)}
                 </td>
               </tr>
