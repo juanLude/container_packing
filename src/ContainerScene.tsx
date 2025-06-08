@@ -1,7 +1,7 @@
 // src/ContainerScene.tsx
 
 import { Canvas } from "@react-three/fiber";
-import { OrbitControls } from "@react-three/drei";
+import { OrbitControls, Html } from "@react-three/drei";
 
 // This file defines the 3D scene for visualizing the container and packed boxes.
 interface Container {
@@ -25,9 +25,17 @@ interface Box {
 export default function ContainerScene({
   container,
   boxes,
+  unplacedBoxes = [],
 }: {
   container: Container;
   boxes: Box[];
+  unplacedBoxes?: {
+    length: number;
+    width: number;
+    height: number;
+    quantity: number;
+    color?: string;
+  }[];
 }) {
   return (
     <div className="w-full min-h-[800px] border rounded bg-gray-100">
@@ -70,8 +78,58 @@ export default function ContainerScene({
             a box geometry with the specified dimensions
             <meshStandardMaterial color={box.color} /> // Use a standard
             material for the box with the specified color
+            <Html center>
+              <div
+                style={{
+                  fontSize: "10px",
+                  background: "white",
+                  padding: "2px",
+                  borderRadius: "4px",
+                }}
+              >
+                {box.length}×{box.width}×{box.height}
+              </div>
+            </Html>
           </mesh>
         ))}
+        {/* Unplaced Boxes */}
+        {unplacedBoxes.map((box, boxIdx) =>
+          Array.from({ length: box.quantity }).map((_, i) => {
+            const margin = 1.5; // Margin between unplaced boxes
+            const offsetX = container.length + margin;
+            const offsetZ = 0; // Keep Z the same so they align along the width
+
+            return (
+              <mesh
+                key={`unplaced-${boxIdx}-${i}`}
+                position={[
+                  offsetX + box.length / 2,
+                  box.height / 2,
+                  offsetZ + box.width / 2,
+                ]}
+              >
+                <boxGeometry args={[box.length, box.height, box.width]} />
+                <meshStandardMaterial
+                  color={box.color || "red"}
+                  opacity={0.5}
+                  transparent
+                />
+                <Html center>
+                  <div
+                    style={{
+                      fontSize: "10px",
+                      background: "white",
+                      padding: "2px",
+                      borderRadius: "4px",
+                    }}
+                  >
+                    {box.length}×{box.width}×{box.height}
+                  </div>
+                </Html>
+              </mesh>
+            );
+          })
+        )}
       </Canvas>
     </div>
   );

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import ContainerScene from "./ContainerScene";
-import type { BoxInput, PlacedBox } from "./PackingLogic";
+import type { BoxInput, PackingResult, PlacedBox } from "./PackingLogic";
 import { calculatePacking } from "./PackingLogic";
 
 import ExportDropdown from "./components/ExportDropdown";
@@ -18,9 +18,15 @@ export default function App() {
   ]);
   const [packedBoxes, setPackedBoxes] = useState<PlacedBox[]>([]);
 
+  const [result, setResult] = useState<PackingResult>({
+    placedBoxes: [],
+    unplacedBoxes: [],
+  });
+
   const handlePack = () => {
     const packed = calculatePacking(container, items);
-    setPackedBoxes(packed);
+    setPackedBoxes(packed.placedBoxes);
+    setResult(packed);
   };
 
   return (
@@ -177,9 +183,25 @@ export default function App() {
       <div className="mt-6 border p-4 rounded bg-white shadow">
         <h2 className="text-lg font-semibold mb-2">Packed Container Preview</h2>
         <div className="w-full min-h-[800px]">
-          <ContainerScene container={container} boxes={packedBoxes} />
+          <ContainerScene
+            container={container}
+            boxes={packedBoxes}
+            unplacedBoxes={result.unplacedBoxes}
+          />
         </div>
       </div>
+      {result.unplacedBoxes.length > 0 && (
+        <div className="text-red-600 mt-4">
+          <p>⚠️ These boxes did not fit in the container:</p>
+          <ul>
+            {result.unplacedBoxes.map((box, idx) => (
+              <li key={idx}>
+                {box.quantity} box(es) of {box.length}x{box.width}x{box.height}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }
