@@ -35,25 +35,29 @@ export function calculatePacking(
   items: BoxInput[]
 ): PackingResult {
   const placedBoxes: PlacedBox[] = [];
-  const unplacedMap: Record<string, BoxInput> = {};
+  const unplacedBoxes: BoxInput[] = [];
 
   let x = 0,
     y = 0,
     z = 0;
-  const layerHeight = items[0]?.height ?? 0;
+  let layerHeight = 0;
 
   for (const item of items) {
     for (let i = 0; i < item.quantity; i++) {
+      // If this item can't fit in the current row, move to a new row
       if (x + item.length > container.length) {
         x = 0;
         y += item.width;
 
+        // If it can't fit in a new row, start a new layer
         if (y + item.width > container.width) {
           y = 0;
           z += layerHeight;
+          layerHeight = 0;
         }
       }
 
+      // Check again if the box fits after adjustments
       if (
         x + item.length <= container.length &&
         y + item.width <= container.width &&
@@ -69,22 +73,25 @@ export function calculatePacking(
           color: item.color || getRandomColor(),
         });
         x += item.length;
+        layerHeight = Math.max(layerHeight, item.height); // Update current layer height
       } else {
-        const key = `${item.length}x${item.width}x${item.height}`;
-        if (!unplacedMap[key]) {
-          unplacedMap[key] = { ...item, quantity: 0 };
-        }
-        unplacedMap[key].quantity++;
+        // Add a single unplaced box to the list
+        unplacedBoxes.push({ ...item, quantity: 1 });
       }
     }
   }
-
-  const unplacedBoxes = Object.values(unplacedMap);
 
   return { placedBoxes, unplacedBoxes };
 }
 
 function getRandomColor() {
-  const colors = ["#f87171", "#60a5fa", "#34d399", "#facc15", "#a78bfa"];
+  const colors = [
+    "#f87171",
+    "#60a5fa",
+    "#34d399",
+    "#facc15",
+    "#a78bfa",
+    "#8b5cf6",
+  ];
   return colors[Math.floor(Math.random() * colors.length)];
 }

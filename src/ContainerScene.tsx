@@ -78,35 +78,44 @@ export default function ContainerScene({
             a box geometry with the specified dimensions
             <meshStandardMaterial color={box.color} /> // Use a standard
             material for the box with the specified color
-            <Html center>
+            {/* <Html center>
               <div
                 style={{
                   fontSize: "10px",
-                  background: "white",
+                  // background: "white",
                   padding: "2px",
                   borderRadius: "4px",
                 }}
               >
                 {box.length}×{box.width}×{box.height}
               </div>
-            </Html>
+            </Html> */}
           </mesh>
         ))}
         {/* Unplaced Boxes */}
-        {unplacedBoxes.map((box, boxIdx) =>
+        {unplacedBoxes.flatMap((box, boxIdx) =>
           Array.from({ length: box.quantity }).map((_, i) => {
-            const margin = 1.5; // Margin between unplaced boxes
-            const offsetX = container.length + margin;
-            const offsetZ = 0; // Keep Z the same so they align along the width
+            const margin = 2;
+            const columns = 5; // how many boxes per row
+            const spacingX = box.length + margin;
+            const spacingZ = box.width + margin;
+
+            const globalIndex =
+              unplacedBoxes
+                .slice(0, boxIdx)
+                .reduce((sum, b) => sum + b.quantity, 0) + i;
+
+            const col = globalIndex % columns;
+            const row = Math.floor(globalIndex / columns);
+
+            const offsetX = container.length + 2.5 + col * spacingX;
+            const offsetY = box.height / 2;
+            const offsetZ = row * spacingZ;
 
             return (
               <mesh
                 key={`unplaced-${boxIdx}-${i}`}
-                position={[
-                  offsetX + box.length / 2,
-                  box.height / 2,
-                  offsetZ + box.width / 2,
-                ]}
+                position={[offsetX, offsetY, offsetZ + box.width / 2]}
               >
                 <boxGeometry args={[box.length, box.height, box.width]} />
                 <meshStandardMaterial
@@ -118,7 +127,7 @@ export default function ContainerScene({
                   <div
                     style={{
                       fontSize: "10px",
-                      background: "white",
+                      // background: "white",
                       padding: "2px",
                       borderRadius: "4px",
                     }}
