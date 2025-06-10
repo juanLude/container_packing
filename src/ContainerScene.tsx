@@ -42,7 +42,11 @@ export default function ContainerScene({
       <Canvas
         style={{ background: "#f0f0f0", width: "100%", height: "500px" }}
         camera={{
-          position: [container.length, container.width, container.height], // Set initial camera position based on container dimensions
+          position: [
+            container.length / 10,
+            container.width / 10,
+            container.height / 10,
+          ], // Set initial camera position based on container dimensions
           fov: 50, // Field of view for the camera
         }}
       >
@@ -110,7 +114,7 @@ export default function ContainerScene({
 
             const offsetX = container.length + 2.5 + col * spacingX;
             const offsetY = box.height / 2;
-            const offsetZ = row * spacingZ;
+            const offsetZ = row * spacingZ; //
 
             return (
               <mesh

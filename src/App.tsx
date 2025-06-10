@@ -31,7 +31,9 @@ export default function App() {
 
   return (
     <div className="w-full min-h-screen overflow-y-auto overflow-x-hidden p-4">
-      <h2 className="text-2xl font-bold mb-4">Container Packing App</h2>
+      <h2 className="text-2xl font-bold mb-4 no-margin-top">
+        Container Packing App
+      </h2>
 
       <div className="grid grid-cols-2 gap-4 mb-4">
         <div>
