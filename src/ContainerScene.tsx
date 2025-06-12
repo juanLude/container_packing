@@ -40,7 +40,7 @@ export default function ContainerScene({
   return (
     <div className="w-full min-h-[800px] border rounded bg-gray-100">
       <Canvas
-        style={{ background: "#f0f0f0", width: "100%", height: "500px" }}
+        style={{ background: "#f0f0f0", width: "100%", height: "700px" }}
         camera={{
           position: [
             container.length / 10,
