@@ -5,26 +5,33 @@ import { calculatePacking } from "./PackingLogic";
 
 import ExportDropdown from "./components/ExportDropdown";
 import StandardSizes from "./components/StandardSizes";
+import { calculateBestFitPacking } from "./BestFitPacking"; // Updated filename
+
 export default function App() {
-  // State to hold container dimensions, items, and packed boxes
   const [container, setContainer] = useState({
     length: 100,
     width: 100,
     height: 100,
   });
-  // Initial items with default dimensions and quantity
-  const [items, setItems] = useState<BoxInput[]>([
-    { length, width: 20, height: 20, quantity: 3 },
-  ]);
-  const [packedBoxes, setPackedBoxes] = useState<PlacedBox[]>([]);
 
+  const [items, setItems] = useState<BoxInput[]>([
+    { length: 20, width: 20, height: 20, quantity: 3 },
+  ]);
+
+  const [packedBoxes, setPackedBoxes] = useState<PlacedBox[]>([]);
   const [result, setResult] = useState<PackingResult>({
     placedBoxes: [],
     unplacedBoxes: [],
   });
 
+  const [strategy, setStrategy] = useState<"simple" | "best-fit">("simple");
+
   const handlePack = () => {
-    const packed = calculatePacking(container, items);
+    const packed =
+      strategy === "best-fit"
+        ? calculateBestFitPacking(container, items)
+        : calculatePacking(container, items);
+
     setPackedBoxes(packed.placedBoxes);
     setResult(packed);
   };
@@ -162,19 +169,20 @@ export default function App() {
       </div>
 
       <div className="flex gap-4 mb-4">
+        <select
+          value={strategy}
+          onChange={(e) => setStrategy(e.target.value as "simple" | "best-fit")}
+          className="border p-1 rounded"
+        >
+          <option value="simple">Simple (Row-by-Row)</option>
+          <option value="best-fit">Best-Fit (Optimized)</option>
+        </select>
         <button
           onClick={handlePack}
           className="bg-green-600 text-white px-4 py-2 rounded"
         >
           Pack Container
         </button>
-
-        {/* <button
-          onClick={handleExport}
-          className="bg-gray-700 text-white px-4 py-2 rounded"
-        >
-          Export Results
-        </button> */}
         <ExportDropdown
           container={container}
           items={items}
@@ -192,6 +200,7 @@ export default function App() {
           />
         </div>
       </div>
+
       {result.unplacedBoxes.length > 0 && (
         <div className="text-red-600 mt-4">
           <p>⚠️ These boxes did not fit in the container:</p>
