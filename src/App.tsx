@@ -6,7 +6,8 @@ import { calculatePacking } from "./PackingLogic";
 import ExportDropdown from "./components/ExportDropdown";
 import StandardSizes from "./components/StandardSizes";
 import { calculateBestFitPacking } from "./BestFitPacking"; // Updated filename
-
+import PackingMetrics from "./components/PackingMetrics";
+import { calculatePackingMetrics } from "./utils/calculatePackingMetrics";
 export default function App() {
   const [container, setContainer] = useState({
     length: 100,
@@ -35,7 +36,8 @@ export default function App() {
     setPackedBoxes(packed.placedBoxes);
     setResult(packed);
   };
-
+  // const result = calculateBestFitPacking(container, items);
+  const metrics = calculatePackingMetrics(container, result.placedBoxes);
   return (
     <div className="w-full min-h-screen overflow-y-auto overflow-x-hidden p-4">
       <h2 className="text-2xl font-bold mb-4 no-margin-top">
@@ -213,6 +215,7 @@ export default function App() {
           </ul>
         </div>
       )}
+      <PackingMetrics metrics={metrics} />
     </div>
   );
 }
