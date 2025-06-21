@@ -77,7 +77,7 @@ export default function App() {
         </div>
 
         <div>
-          <h3 className="font-semibold mb-2">Item Dimensions</h3>
+          <h3 className="font-semibold mb-2">Item Dimensions (m)</h3>
 
           <table className="table-auto w-full text-sm mb-2 border border-gray-300">
             <thead className="bg-gray-100">

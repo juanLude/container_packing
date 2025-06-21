@@ -45,7 +45,7 @@ export function calculateBestFitPacking(
     }
   }
 
-  // ✅ Sort boxes by volume descending (biggest first)
+  // Sort boxes by volume descending (biggest first)
   allBoxes.sort((a, b) => {
     const volA = a.length * a.width * a.height;
     const volB = b.length * b.width * b.height;
@@ -58,7 +58,7 @@ export function calculateBestFitPacking(
 
     const rotations = rotateBox(box);
 
-    // ✅ Sort spaces by volume ascending (tightest first)
+    // Sort spaces by volume ascending (tightest first)
     spaces.sort(
       (a, b) => a.length * a.width * a.height - b.length * b.width * b.height
     );
@@ -95,15 +95,15 @@ export function calculateBestFitPacking(
       const { x, y, z } = space;
       const newSpaces: Space[] = [];
 
-      // Subdivide remaining space into 6 directions
+      // Only split along the 3 axes
       if (space.length > l) {
         newSpaces.push({
           x: x + l,
           y,
           z,
           length: space.length - l,
-          width: w,
-          height: h,
+          width: space.width,
+          height: space.height,
         });
       }
       if (space.width > w) {
@@ -111,9 +111,9 @@ export function calculateBestFitPacking(
           x,
           y: y + w,
           z,
-          length: l,
+          length: space.length,
           width: space.width - w,
-          height: h,
+          height: space.height,
         });
       }
       if (space.height > h) {
@@ -121,8 +121,8 @@ export function calculateBestFitPacking(
           x,
           y,
           z: z + h,
-          length: l,
-          width: w,
+          length: space.length,
+          width: space.width,
           height: space.height - h,
         });
       }
