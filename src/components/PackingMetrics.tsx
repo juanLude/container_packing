@@ -28,12 +28,10 @@ export default function PackingMetrics({ metrics }: PackingMetricsPanelProps) {
         </div>
       </div>
 
-      <div className="mb-4">
-        <div className="flex justify-between mb-1">
-          <span className="text-sm text-gray-500">Utilization</span>
-          <span className="text-sm font-medium text-gray-700">
-            {metrics.utilization}%
-          </span>
+      <div className="mb-1">
+        <span className="text-sm text-gray-500">Utilization</span>
+        <div className="text-sm font-medium text-gray-700">
+          {metrics.utilization}%
         </div>
         <div className="w-full bg-gray-200 rounded-full h-3">
           <div
