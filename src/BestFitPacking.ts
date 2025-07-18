@@ -27,6 +27,7 @@ export function calculateBestFitPacking(
 ): PackingResult {
   const placedBoxes: PlacedBox[] = [];
   const unplacedBoxes: BoxInput[] = [];
+
   let spaces: Space[] = [
     {
       x: 0,
@@ -45,7 +46,7 @@ export function calculateBestFitPacking(
     }
   }
 
-  // Sort boxes by volume descending (biggest first)
+  // Sort by volume descending
   allBoxes.sort((a, b) => {
     const volA = a.length * a.width * a.height;
     const volB = b.length * b.width * b.height;
@@ -58,7 +59,7 @@ export function calculateBestFitPacking(
 
     const rotations = rotateBox(box);
 
-    // Sort spaces by volume ascending (tightest first)
+    // Sort spaces ascending (tightest fit first)
     spaces.sort(
       (a, b) => a.length * a.width * a.height - b.length * b.width * b.height
     );
@@ -68,7 +69,7 @@ export function calculateBestFitPacking(
         if (l <= space.length && w <= space.width && h <= space.height) {
           const waste = space.length * space.width * space.height - l * w * h;
           const surfaceArea = l * w + w * h + h * l;
-          const score = waste + surfaceArea * 0.1; // Adjust the 0.1 weight as needed
+          const score = waste + surfaceArea * 0.1;
 
           if (score < bestScore) {
             bestScore = score;
@@ -95,7 +96,6 @@ export function calculateBestFitPacking(
       const { x, y, z } = space;
       const newSpaces: Space[] = [];
 
-      // Only split along the 3 axes
       if (space.length > l) {
         newSpaces.push({
           x: x + l,
@@ -127,7 +127,7 @@ export function calculateBestFitPacking(
         });
       }
 
-      // Optional corner cuts (to reduce dead space)
+      // Optional cuts to reduce dead space
       if (space.length > l && space.width > w) {
         newSpaces.push({
           x: x + l,
@@ -159,10 +159,10 @@ export function calculateBestFitPacking(
         });
       }
 
-      // Remove used space and add the new fragments
       spaces = spaces.filter((s) => s !== space).concat(newSpaces);
     } else {
-      unplacedBoxes.push(box);
+      // Same structure as input: return as BoxInput
+      unplacedBoxes.push({ ...box, quantity: 1 });
     }
   }
 
