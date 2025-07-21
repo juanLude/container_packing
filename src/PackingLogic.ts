@@ -1,11 +1,14 @@
-// This file contains the packing logic for the box packing application.
+// This file contains the packing logic (simple row-by-row packing algorithm)
 // It calculates the placement of boxes within a container based on their dimensions and quantity.
+// It places boxes into a 3D container using a simple layered row-fill approach,
+// without rotation or complex optimization.
 // This interface defines the structure of a box input, including its dimensions and quantity.
 
 // The PlacedBox interface defines the structure of a box after it has been placed in the container,
 // including its position (x, y, z coordinates) and color.
 
 export interface BoxInput {
+  // Represents a box to be packed
   length: number; // Length of the box
   width: number; // Width of the box
   height: number; // Height of the box
@@ -14,6 +17,7 @@ export interface BoxInput {
 }
 
 export interface PlacedBox {
+  // Represents a box that has been successfully placed in the container
   length: number; // Length of the box
   width: number; // Width of the box
   height: number; // Height of the box
@@ -29,18 +33,18 @@ export interface PackingResult {
 }
 
 // The calculatePacking function takes a container's dimensions and an array of BoxInput objects,
-// and returns an array of PlacedBox objects representing the packed boxes.
+// and returns an array of PlacedBox objects representing the packed boxes and an array of unplaced boxes.
 export function calculatePacking(
   container: { length: number; width: number; height: number },
   items: BoxInput[]
 ): PackingResult {
-  const placedBoxes: PlacedBox[] = [];
-  const unplacedBoxes: BoxInput[] = [];
+  const placedBoxes: PlacedBox[] = []; // Initialize an empty array to hold successfully placed boxes
+  const unplacedBoxes: BoxInput[] = []; // Initialize an empty array to hold boxes that couldn't be placed
 
-  let x = 0,
+  let x = 0, //
     y = 0,
     z = 0;
-  let layerHeight = 0;
+  let layerHeight = 0; //
 
   for (const item of items) {
     for (let i = 0; i < item.quantity; i++) {

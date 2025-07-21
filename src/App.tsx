@@ -85,7 +85,7 @@ export default function App() {
                 <th className="border px-2 py-1">Length</th>
                 <th className="border px-2 py-1">Width</th>
                 <th className="border px-2 py-1">Height</th>
-                <th className="border px-2 py-1">Qty</th>
+                <th className="border px-2 py-1">Quantity</th>
                 <th className="border px-2 py-1">Actions</th>
               </tr>
             </thead>
