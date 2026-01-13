@@ -5,7 +5,7 @@ import {
   PlacedBox,
   Space,
   Position,
-  Dimensions,
+  //Dimensions,
   PackingOptions,
 } from "./types";
 

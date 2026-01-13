@@ -1,221 +1,224 @@
 import { useState } from "react";
-import ContainerScene from "./ContainerScene";
-import type { BoxInput, PackingResult, PlacedBox } from "./PackingLogic";
-import { calculatePacking } from "./PackingLogic";
+import {
+  Box,
+  Container,
+  PackingResult,
+  AlgorithmType,
+} from "./algorithms/types";
+import { heuristicPacking } from "./algorithms/heuristic";
+import BoxInput from "./components/BoxInput";
+import ContainerViewer from "./components/ContainerViewer";
+import Statistics from "./components/Statitstics";
+import Controls from "./components/Controls";
+import CSVImport from "./components/CSVImport";
+import "./App.css";
 
-import ExportDropdown from "./components/ExportDropdown";
-import StandardSizes from "./components/StandardSizes";
-import { calculateBestFitPacking } from "./BestFitPacking"; // Updated filename
-import PackingMetrics from "./components/PackingMetrics";
-import { calculatePackingMetrics } from "./utils/calculatePackingMetrics";
-export default function App() {
-  const [container, setContainer] = useState({
-    length: 100,
-    width: 100,
-    height: 100,
-  });
+const defaultContainer: Container = {
+  id: "container-1",
+  name: "Standard 20ft Container",
+  dimensions: { x: 589, y: 239, z: 235 }, // cm
+  maxWeight: 28000, // kg
+  maxWeightPerLevel: 10000,
+};
 
-  const [items, setItems] = useState<BoxInput[]>([
-    { length: 20, width: 20, height: 20, quantity: 3 },
-  ]);
+function App() {
+  const [boxes, setBoxes] = useState<Box[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [container, setContainer] = useState<Container>(defaultContainer);
+  const [packingResult, setPackingResult] = useState<PackingResult | null>(
+    null
+  );
+  const [selectedAlgorithm, setSelectedAlgorithm] =
+    useState<AlgorithmType>("heuristic");
+  const [isLoading, setIsLoading] = useState(false);
 
-  const [packedBoxes, setPackedBoxes] = useState<PlacedBox[]>([]);
-  const [result, setResult] = useState<PackingResult>({
-    placedBoxes: [],
-    unplacedBoxes: [],
-  });
-
-  const [strategy, setStrategy] = useState<"simple" | "best-fit">("simple");
-
-  const handlePack = () => {
-    const packed =
-      strategy === "best-fit"
-        ? calculateBestFitPacking(container, items)
-        : calculatePacking(container, items);
-
-    setPackedBoxes(packed.placedBoxes);
-    setResult(packed);
+  const handleAddBox = (box: Box) => {
+    setBoxes([...boxes, box]);
   };
-  // const result = calculateBestFitPacking(container, items);
-  const metrics = calculatePackingMetrics(container, result.placedBoxes);
+
+  const handleRemoveBox = (id: string) => {
+    setBoxes(boxes.filter((b) => b.id !== id));
+  };
+
+  const handleImportBoxes = (importedBoxes: Box[]) => {
+    setBoxes([...boxes, ...importedBoxes]);
+  };
+
+  const handleClearAll = () => {
+    setBoxes([]);
+    setPackingResult(null);
+  };
+
+  const handlePack = async () => {
+    if (boxes.length === 0) {
+      alert("Please add some boxes first!");
+      return;
+    }
+
+    setIsLoading(true);
+
+    // Simulate async operation for better UX
+    setTimeout(() => {
+      try {
+        let result: PackingResult;
+
+        switch (selectedAlgorithm) {
+          case "heuristic":
+            result = heuristicPacking(boxes, container, {
+              algorithm: "heuristic",
+              respectStackability: true,
+              respectFragility: true,
+            });
+            break;
+          case "ebAfit":
+            // TODO: Implement EB-AFIT algorithm
+            result = heuristicPacking(boxes, container, {
+              algorithm: "ebAfit",
+            });
+            break;
+          case "bruteForce":
+            // TODO: Implement brute force (limited to small sets)
+            result = heuristicPacking(boxes, container, {
+              algorithm: "bruteForce",
+            });
+            break;
+          default:
+            result = heuristicPacking(boxes, container, {
+              algorithm: "heuristic",
+            });
+        }
+
+        setPackingResult(result);
+      } catch (error) {
+        console.error("Packing error:", error);
+        alert("An error occurred during packing. Please try again.");
+      } finally {
+        setIsLoading(false);
+      }
+    }, 100);
+  };
+
+  const handleExport = () => {
+    if (!packingResult) return;
+
+    const data = {
+      container: packingResult.container,
+      packedBoxes: packingResult.packedBoxes,
+      unpackedBoxes: packingResult.unpackedBoxes,
+      statistics: {
+        volumeUtilization: packingResult.volumeUtilization,
+        weightUtilization: packingResult.weightUtilization,
+        totalWeight: packingResult.totalWeight,
+        centerOfGravity: packingResult.centerOfGravity,
+        isStable: packingResult.isStable,
+      },
+    };
+
+    const blob = new Blob([JSON.stringify(data, null, 2)], {
+      type: "application/json",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `packing-result-${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
-    <div className="w-full min-h-screen overflow-y-auto overflow-x-hidden p-4">
-      <h2 className="text-2xl font-bold mb-4 no-margin-top">
-        Container Packing App
-      </h2>
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+      <div className="container mx-auto px-4 py-8">
+        {/* Header */}
+        <header className="text-center mb-8">
+          <h1 className="text-4xl font-bold text-white mb-2">
+            Container Packing Optimizer
+          </h1>
+          <p className="text-slate-400">
+            Optimize your container loading with advanced algorithms
+          </p>
+        </header>
 
-      <div className="grid grid-cols-2 gap-4 mb-4">
-        <div>
-          <StandardSizes setContainer={setContainer} container={container} />
-          <input
-            type="number"
-            placeholder="Length (cm)"
-            value={container.length}
-            onChange={(e) =>
-              setContainer({ ...container, length: Number(e.target.value) })
-            }
-            className="border p-1 mr-2"
-          />
-          <input
-            type="number"
-            placeholder="Width"
-            value={container.width}
-            onChange={(e) =>
-              setContainer({ ...container, width: Number(e.target.value) })
-            }
-            className="border p-1 mr-2"
-          />
-          <input
-            type="number"
-            placeholder="Height"
-            value={container.height}
-            onChange={(e) =>
-              setContainer({ ...container, height: Number(e.target.value) })
-            }
-            className="border p-1"
-          />
-        </div>
+        {/* Main Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left Panel - Input */}
+          <div className="lg:col-span-1 space-y-6">
+            <BoxInput onAddBox={handleAddBox} />
+            <CSVImport onImport={handleImportBoxes} />
 
-        <div>
-          <h3 className="font-semibold mb-2">Item Dimensions (m)</h3>
-
-          <table className="table-auto w-full text-sm mb-2 border border-gray-300">
-            <thead className="bg-gray-100">
-              <tr>
-                <th className="border px-2 py-1">Length</th>
-                <th className="border px-2 py-1">Width</th>
-                <th className="border px-2 py-1">Height</th>
-                <th className="border px-2 py-1">Quantity</th>
-                <th className="border px-2 py-1">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((item, idx) => (
-                <tr key={idx}>
-                  <td className="border px-2 py-1">
-                    <input
-                      type="number"
-                      value={item.length}
-                      onChange={(e) => {
-                        const newItems = [...items];
-                        newItems[idx].length = Number(e.target.value);
-                        setItems(newItems);
-                      }}
-                      className="border p-1 w-full"
-                    />
-                  </td>
-                  <td className="border px-2 py-1">
-                    <input
-                      type="number"
-                      value={item.width}
-                      onChange={(e) => {
-                        const newItems = [...items];
-                        newItems[idx].width = Number(e.target.value);
-                        setItems(newItems);
-                      }}
-                      className="border p-1 w-full"
-                    />
-                  </td>
-                  <td className="border px-2 py-1">
-                    <input
-                      type="number"
-                      value={item.height}
-                      onChange={(e) => {
-                        const newItems = [...items];
-                        newItems[idx].height = Number(e.target.value);
-                        setItems(newItems);
-                      }}
-                      className="border p-1 w-full"
-                    />
-                  </td>
-                  <td className="border px-2 py-1">
-                    <input
-                      type="number"
-                      value={item.quantity}
-                      onChange={(e) => {
-                        const newItems = [...items];
-                        newItems[idx].quantity = Number(e.target.value);
-                        setItems(newItems);
-                      }}
-                      className="border p-1 w-full"
-                    />
-                  </td>
-                  <td className="border px-2 py-1 text-center">
+            {/* Box List */}
+            <div className="bg-slate-800 rounded-lg p-6 shadow-xl">
+              <h3 className="text-xl font-semibold text-white mb-4">
+                Boxes ({boxes.length})
+              </h3>
+              <div className="space-y-2 max-h-96 overflow-y-auto">
+                {boxes.map((box) => (
+                  <div
+                    key={box.id}
+                    className="flex items-center justify-between bg-slate-700 p-3 rounded"
+                  >
+                    <div className="text-sm text-white">
+                      <div className="font-medium">{box.name || box.id}</div>
+                      <div className="text-slate-400">
+                        {box.dimensions.x} × {box.dimensions.y} ×{" "}
+                        {box.dimensions.z} cm
+                        {" | "}
+                        {box.weight} kg
+                      </div>
+                    </div>
                     <button
-                      onClick={() => {
-                        const newItems = items.filter((_, i) => i !== idx);
-                        setItems(newItems);
-                      }}
-                      className="text-red-500 hover:text-red-700 text-sm"
+                      onClick={() => handleRemoveBox(box.id)}
+                      className="text-red-400 hover:text-red-300"
                     >
-                      Delete
+                      ✕
                     </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                  </div>
+                ))}
+                {boxes.length === 0 && (
+                  <div className="text-center text-slate-500 py-8">
+                    No boxes added yet
+                  </div>
+                )}
+              </div>
+            </div>
 
-          <button
-            onClick={() =>
-              setItems([
-                ...items,
-                { length: 1, width: 1, height: 1, quantity: 1 },
-              ])
-            }
-            className="bg-blue-500 text-white px-2 py-1 rounded text-sm"
-          >
-            + Add Item
-          </button>
+            <Controls
+              algorithm={selectedAlgorithm}
+              onAlgorithmChange={setSelectedAlgorithm}
+              onPack={handlePack}
+              onClear={handleClearAll}
+              onExport={handleExport}
+              isLoading={isLoading}
+              hasResult={!!packingResult}
+              boxCount={boxes.length}
+            />
+          </div>
+
+          {/* Right Panel - Visualization */}
+          <div className="lg:col-span-2 space-y-6">
+            <div className="bg-slate-800 rounded-lg p-6 shadow-xl">
+              <h3 className="text-xl font-semibold text-white mb-4">
+                3D Visualization
+              </h3>
+              <div className="aspect-video bg-slate-900 rounded-lg overflow-hidden">
+                {packingResult ? (
+                  <ContainerViewer result={packingResult} />
+                ) : (
+                  <div className="flex items-center justify-center h-full text-slate-500">
+                    <div className="text-center">
+                      <div className="text-6xl mb-4">📦</div>
+                      <div>Add boxes and click "Pack" to visualize</div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {packingResult && <Statistics result={packingResult} />}
+          </div>
         </div>
       </div>
-
-      <div className="flex gap-4 mb-4">
-        <select
-          value={strategy}
-          onChange={(e) => setStrategy(e.target.value as "simple" | "best-fit")}
-          className="border p-1 rounded"
-        >
-          <option value="simple">Simple (Row-by-Row)</option>
-          <option value="best-fit">Best-Fit (Optimized)</option>
-        </select>
-        <button
-          onClick={handlePack}
-          className="bg-green-600 text-white px-4 py-2 rounded"
-        >
-          Pack Container
-        </button>
-        <ExportDropdown
-          container={container}
-          items={items}
-          packedBoxes={packedBoxes}
-        />
-      </div>
-
-      <div className="mt-6 border p-4 rounded bg-white shadow">
-        <h2 className="text-lg font-semibold mb-2">Packed Container Preview</h2>
-        <div className="w-full min-h-[800px]">
-          <ContainerScene
-            container={container}
-            boxes={packedBoxes}
-            unplacedBoxes={result.unplacedBoxes}
-          />
-        </div>
-      </div>
-
-      {result.unplacedBoxes.length > 0 && (
-        <div className="text-red-600 mt-4">
-          <p>⚠️ These boxes did not fit in the container:</p>
-          <ul>
-            {result.unplacedBoxes.map((box, idx) => (
-              <li key={idx}>
-                {box.quantity} box(es) of {box.length}x{box.width}x{box.height}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-      <PackingMetrics metrics={metrics} />
     </div>
   );
 }
+
+export default App;

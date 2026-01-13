@@ -2,7 +2,7 @@
 import { useState } from "react";
 import type { BoxInput, PlacedBox } from "../PackingLogic";
 import { exportPackingResultsToJson } from "../utils/exportToJson";
-import { exportPackingResultsToExcel } from "../utils/exportToExcel";
+// import { exportPackingResultsToExcel } from "../utils/exportToExcel";
 
 interface Props {
   container: {
@@ -30,7 +30,7 @@ export default function ExportDropdown({
     if (format === "json") {
       exportPackingResultsToJson(container, items, packedBoxes);
     } else {
-      exportPackingResultsToExcel(container, items, packedBoxes);
+      // exportPackingResultsToExcel(container, items, packedBoxes);
     }
 
     setOpen(false);

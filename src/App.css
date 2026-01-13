@@ -1,12 +1,20 @@
-#root {
-  max-width: 1280px;
+.container {
+  max-width: 1400px;
   margin: 0 auto;
   padding: 2rem;
-  width: 100%;
-  height: auto;
-  text-align: center;
 }
 
-.no-margin-top {
-  margin-top: 0 !important;
+/* Glass morphism effect */
+.glass {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Gradient text */
+.gradient-text {
+  background: linear-gradient(to right, #3b82f6, #06b6d4);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
