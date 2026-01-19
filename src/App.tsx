@@ -11,6 +11,7 @@ import ContainerViewer from "./components/ContainerViewer";
 import Statistics from "./components/Statitstics";
 import Controls from "./components/Controls";
 import CSVImport from "./components/CSVImport";
+import PDFPackingInstructions from "./components/PDFPackingInstructions";
 import "./App.css";
 
 const defaultContainer: Container = {
@@ -191,6 +192,20 @@ function App() {
               hasResult={!!packingResult}
               boxCount={boxes.length}
             />
+
+            {/* PDF Button - Only visible when there's a result */}
+            {packingResult && (
+              <div className="bg-slate-800 rounded-lg p-6 shadow-xl">
+                <h3 className="text-xl font-semibold text-white mb-4">
+                  📄 Documentation
+                </h3>
+                <PDFPackingInstructions result={packingResult} />
+                <p className="mt-3 text-xs text-slate-400 text-center">
+                  A new window will open with the instructions. Use Ctrl+P
+                  (Cmd+P on Mac) and select "Save as PDF"
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Right Panel - Visualization */}
