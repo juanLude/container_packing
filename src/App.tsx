@@ -11,6 +11,7 @@ import ContainerViewer from "./components/ContainerViewer";
 import Statistics from "./components/Statitstics";
 import Controls from "./components/Controls";
 import CSVImport from "./components/CSVImport";
+import ExcelImport from "./components/ExcelImport";
 import PDFPackingInstructions from "./components/PDFPackingInstructions";
 import "./App.css";
 
@@ -144,6 +145,7 @@ function App() {
           {/* Left Panel - Input */}
           <div className="lg:col-span-1 space-y-6">
             <BoxInput onAddBox={handleAddBox} />
+            <ExcelImport onImport={handleImportBoxes} />
             <CSVImport onImport={handleImportBoxes} />
 
             {/* Box List */}
