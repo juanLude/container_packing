@@ -8,6 +8,7 @@ import {
 import { heuristicPacking } from "./algorithms/heuristic";
 import BoxInput from "./components/BoxInput";
 import ContainerViewer from "./components/ContainerViewer";
+import PackingViewer3DIntegrated from "./components/PackingViewer3DIntegrated"; // NEW: Import the integrated 3D viewer
 import Statistics from "./components/Statitstics";
 import Controls from "./components/Controls";
 import CSVImport from "./components/CSVImport";
@@ -28,11 +29,12 @@ function App() {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [container, setContainer] = useState<Container>(defaultContainer);
   const [packingResult, setPackingResult] = useState<PackingResult | null>(
-    null
+    null,
   );
   const [selectedAlgorithm, setSelectedAlgorithm] =
     useState<AlgorithmType>("heuristic");
   const [isLoading, setIsLoading] = useState(false);
+  const [viewerMode, setViewerMode] = useState<"static" | "animated">("static"); // NEW: Toggle between viewers
 
   const handleAddBox = (box: Box) => {
     setBoxes([...boxes, box]);
@@ -195,6 +197,40 @@ function App() {
               boxCount={boxes.length}
             />
 
+            {/* NEW: Viewer Mode Toggle */}
+            {packingResult && (
+              <div className="bg-slate-800 rounded-lg p-6 shadow-xl">
+                <h3 className="text-xl font-semibold text-white mb-4">
+                  🎬 Viewer Mode
+                </h3>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setViewerMode("static")}
+                    className={`flex-1 py-2 rounded transition-colors ${
+                      viewerMode === "static"
+                        ? "bg-blue-600 text-white"
+                        : "bg-slate-700 text-slate-300 hover:bg-slate-600"
+                    }`}
+                  >
+                    📊 Static View
+                  </button>
+                  <button
+                    onClick={() => setViewerMode("animated")}
+                    className={`flex-1 py-2 rounded transition-colors ${
+                      viewerMode === "animated"
+                        ? "bg-blue-600 text-white"
+                        : "bg-slate-700 text-slate-300 hover:bg-slate-600"
+                    }`}
+                  >
+                    🎬 Animation
+                  </button>
+                </div>
+                <p className="mt-3 text-xs text-slate-400 text-center">
+                  Switch between static overview and step-by-step animation
+                </p>
+              </div>
+            )}
+
             {/* PDF Button - Only visible when there's a result */}
             {packingResult && (
               <div className="bg-slate-800 rounded-lg p-6 shadow-xl">
@@ -215,10 +251,21 @@ function App() {
             <div className="bg-slate-800 rounded-lg p-6 shadow-xl">
               <h3 className="text-xl font-semibold text-white mb-4">
                 3D Visualization
+                {packingResult && viewerMode === "animated" && (
+                  <span className="ml-2 text-sm text-blue-400">
+                    (Interactive Animation)
+                  </span>
+                )}
               </h3>
               <div className="aspect-video bg-slate-900 rounded-lg overflow-hidden">
                 {packingResult ? (
-                  <ContainerViewer result={packingResult} />
+                  viewerMode === "animated" ? (
+                    // NEW: Render the animated viewer with actual data
+                    <PackingViewer3DIntegrated result={packingResult} />
+                  ) : (
+                    // Original static viewer
+                    <ContainerViewer result={packingResult} />
+                  )
                 ) : (
                   <div className="flex items-center justify-center h-full text-slate-500">
                     <div className="text-center">

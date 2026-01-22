@@ -1,7 +1,14 @@
 import React, { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
+import { PackingResult } from "../algorithms/types";
 
-const PackingViewer3D = () => {
+interface PackingViewer3DIntegratedProps {
+  result: PackingResult;
+}
+
+const PackingViewer3DIntegrated: React.FC<PackingViewer3DIntegratedProps> = ({
+  result,
+}) => {
   const mountRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
@@ -21,62 +28,29 @@ const PackingViewer3D = () => {
     theta: Math.PI / 4,
     phi: Math.PI / 4,
   });
-  const [cameraDistance, setCameraDistance] = useState(25);
+  const [cameraDistance, setCameraDistance] = useState(
+    Math.max(result.container.dimensions.x, result.container.dimensions.z) * 2,
+  );
 
-  // Datos de ejemplo
-  const containerDimensions = { width: 10, height: 8, depth: 6 };
-  const boxes = [
-    {
-      id: "1",
-      width: 2,
-      height: 2,
-      depth: 2,
-      x: 0,
-      y: 0,
-      z: 0,
-      color: "#ff6b6b",
-    },
-    {
-      id: "2",
-      width: 3,
-      height: 2,
-      depth: 2,
-      x: 2.5,
-      y: 0,
-      z: 0,
-      color: "#4ecdc4",
-    },
-    {
-      id: "3",
-      width: 2,
-      height: 3,
-      depth: 2,
-      x: 0,
-      y: 0,
-      z: 2.5,
-      color: "#45b7d1",
-    },
-    {
-      id: "4",
-      width: 2,
-      height: 2,
-      depth: 1.5,
-      x: 6,
-      y: 0,
-      z: 0,
-      color: "#96ceb4",
-    },
-    {
-      id: "5",
-      width: 1.5,
-      height: 2,
-      depth: 2,
-      x: 2.5,
-      y: 0,
-      z: 2.5,
-      color: "#ffeaa7",
-    },
-  ];
+  // Convert container and boxes to usable format
+  const containerDimensions = {
+    width: result.container.dimensions.x,
+    height: result.container.dimensions.y,
+    depth: result.container.dimensions.z,
+  };
+
+  const boxes = result.packedBoxes.map((box) => ({
+    id: box.id,
+    width: box.dimensions.x,
+    height: box.dimensions.y,
+    depth: box.dimensions.z,
+    x: box.position.x,
+    y: box.position.y,
+    z: box.position.z,
+    color: box.color || `#${Math.floor(Math.random() * 16777215).toString(16)}`,
+    name: box.name,
+    weight: box.weight,
+  }));
 
   const totalSteps = boxes.length;
 
@@ -94,7 +68,7 @@ const PackingViewer3D = () => {
       75,
       mountRef.current.clientWidth / mountRef.current.clientHeight,
       0.1,
-      1000,
+      10000,
     );
     cameraRef.current = camera;
 
@@ -114,12 +88,16 @@ const PackingViewer3D = () => {
     scene.add(ambientLight);
 
     const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-    directionalLight.position.set(10, 20, 10);
+    directionalLight.position.set(
+      containerDimensions.width,
+      containerDimensions.height * 2,
+      containerDimensions.depth,
+    );
     directionalLight.castShadow = true;
-    directionalLight.shadow.camera.left = -20;
-    directionalLight.shadow.camera.right = 20;
-    directionalLight.shadow.camera.top = 20;
-    directionalLight.shadow.camera.bottom = -20;
+    directionalLight.shadow.camera.left = -containerDimensions.width;
+    directionalLight.shadow.camera.right = containerDimensions.width * 2;
+    directionalLight.shadow.camera.top = containerDimensions.height * 2;
+    directionalLight.shadow.camera.bottom = -containerDimensions.depth;
     scene.add(directionalLight);
 
     // Contenedor
@@ -252,8 +230,12 @@ const PackingViewer3D = () => {
 
   const handleWheel = (e: React.WheelEvent) => {
     e.preventDefault();
+    const minDistance =
+      Math.max(containerDimensions.width, containerDimensions.depth) * 0.5;
+    const maxDistance =
+      Math.max(containerDimensions.width, containerDimensions.depth) * 4;
     setCameraDistance((prev) =>
-      Math.max(10, Math.min(50, prev + e.deltaY * 0.05)),
+      Math.max(minDistance, Math.min(maxDistance, prev + e.deltaY * 0.5)),
     );
   };
 
@@ -313,7 +295,7 @@ const PackingViewer3D = () => {
       const box = boxes[currentStep];
       const easedProgress = easeInOutCubic(animationProgress);
 
-      const startY = containerDimensions.height + box.height + 5;
+      const startY = containerDimensions.height + box.height + 50;
       const endY = box.y + box.height / 2;
       const currentY = startY + (endY - startY) * easedProgress;
 
@@ -342,7 +324,7 @@ const PackingViewer3D = () => {
       scene.add(mesh);
       boxMeshesRef.current.push(mesh);
     }
-  }, [currentStep, animationProgress]);
+  }, [currentStep, animationProgress, boxes]);
 
   // Loop de animación
   useEffect(() => {
@@ -367,7 +349,7 @@ const PackingViewer3D = () => {
     }, 16);
 
     return () => clearInterval(interval);
-  }, [isPlaying, currentStep, speed]);
+  }, [isPlaying, currentStep, speed, boxes.length]);
 
   // Controles
   const play = () => setIsPlaying(true);
@@ -386,11 +368,12 @@ const PackingViewer3D = () => {
   const previousStep = () => skipToStep(currentStep - 1);
 
   return (
-    <div className="w-full h-screen bg-gray-900 flex flex-col">
+    <div className="w-full h-full flex flex-col">
       {/* Visualizador 3D */}
       <div
         ref={mountRef}
         className="flex-1 cursor-grab active:cursor-grabbing"
+        style={{ minHeight: "400px" }}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
@@ -400,24 +383,24 @@ const PackingViewer3D = () => {
 
       {/* Instrucciones */}
       <div className="absolute top-4 left-4 bg-gray-800 bg-opacity-90 p-3 rounded-lg text-white text-sm">
-        <p className="font-semibold mb-1">🎮 Controles:</p>
-        <p>🖱️ Click + Arrastrar: Rotar</p>
+        <p className="font-semibold mb-1">🎮 Controls:</p>
+        <p>🖱️ Click + Drag: Rotate</p>
         <p>🔄 Scroll: Zoom</p>
       </div>
 
       {/* Panel de controles */}
-      <div className="bg-gray-800 p-6 border-t border-gray-700">
+      <div className="bg-slate-700 p-4 mt-2 rounded">
         {/* Progreso */}
-        <div className="mb-4">
+        <div className="mb-3">
           <div className="flex items-center justify-between mb-2">
             <span className="text-white text-sm font-medium">
-              Paso {currentStep + 1} de {totalSteps}
+              Step {currentStep + 1} of {totalSteps}
             </span>
-            <span className="text-gray-400 text-xs">
-              Progreso: {Math.round(animationProgress * 100)}%
+            <span className="text-slate-300 text-xs">
+              Progress: {Math.round(animationProgress * 100)}%
             </span>
           </div>
-          <div className="h-3 bg-gray-700 rounded-full overflow-hidden">
+          <div className="h-2 bg-slate-600 rounded-full overflow-hidden">
             <div
               className="h-full bg-gradient-to-r from-blue-500 to-purple-500 transition-all duration-200 rounded-full"
               style={{
@@ -428,21 +411,21 @@ const PackingViewer3D = () => {
         </div>
 
         {/* Controles principales */}
-        <div className="flex items-center justify-center gap-3 mb-4">
+        <div className="flex items-center justify-center gap-2 mb-3 flex-wrap">
           <button
             onClick={reset}
-            className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
-            title="Reiniciar"
+            className="px-3 py-1.5 bg-slate-600 hover:bg-slate-500 text-white rounded text-sm transition-colors"
+            title="Reset"
           >
-            ⏮ Reiniciar
+            ⏮ Reset
           </button>
 
           <button
             onClick={previousStep}
             disabled={currentStep === 0}
-            className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            className="px-3 py-1.5 bg-slate-600 hover:bg-slate-500 text-white rounded text-sm disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
           >
-            ⏪ Anterior
+            ⏪ Prev
           </button>
 
           {!isPlaying ? (
@@ -451,89 +434,69 @@ const PackingViewer3D = () => {
               disabled={
                 currentStep === totalSteps - 1 && animationProgress >= 1
               }
-              className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg disabled:opacity-30 disabled:cursor-not-allowed transition-colors shadow-lg"
+              className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded text-sm disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
             >
-              ▶ Reproducir
+              ▶ Play
             </button>
           ) : (
             <button
               onClick={pause}
-              className="px-8 py-3 bg-yellow-600 hover:bg-yellow-700 text-white font-semibold rounded-lg transition-colors shadow-lg"
+              className="px-4 py-1.5 bg-yellow-600 hover:bg-yellow-700 text-white font-semibold rounded text-sm transition-colors"
             >
-              ⏸ Pausar
+              ⏸ Pause
             </button>
           )}
 
           <button
             onClick={nextStep}
             disabled={currentStep === totalSteps - 1}
-            className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            className="px-3 py-1.5 bg-slate-600 hover:bg-slate-500 text-white rounded text-sm disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
           >
-            Siguiente ⏩
+            Next ⏩
           </button>
 
           <button
             onClick={() => skipToStep(totalSteps - 1)}
-            className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
-            title="Ir al final"
+            className="px-3 py-1.5 bg-slate-600 hover:bg-slate-500 text-white rounded text-sm transition-colors"
+            title="Skip to end"
           >
-            Final ⏭
+            End ⏭
           </button>
         </div>
 
         {/* Control de velocidad */}
-        <div className="flex items-center justify-center gap-4">
-          <span className="text-gray-400 text-sm">Velocidad:</span>
+        <div className="flex items-center justify-center gap-2 mb-3">
+          <span className="text-slate-300 text-xs">Speed:</span>
           {[0.5, 1, 1.5, 2, 3].map((s) => (
             <button
               key={s}
               onClick={() => setSpeed(s)}
-              className={`px-3 py-1 rounded ${
+              className={`px-2 py-1 rounded text-xs ${
                 speed === s
                   ? "bg-blue-600 text-white"
-                  : "bg-gray-700 text-gray-300 hover:bg-gray-600"
-              } transition-colors text-sm`}
+                  : "bg-slate-600 text-slate-300 hover:bg-slate-500"
+              } transition-colors`}
             >
               {s}x
             </button>
           ))}
         </div>
 
-        {/* Timeline */}
-        <div className="flex gap-1 mt-4">
-          {boxes.map((box, index) => (
-            <button
-              key={box.id}
-              onClick={() => skipToStep(index)}
-              className={`flex-1 h-10 rounded transition-all ${
-                index < currentStep
-                  ? "bg-green-600 hover:bg-green-700"
-                  : index === currentStep
-                    ? "bg-blue-600 hover:bg-blue-700 ring-2 ring-blue-300"
-                    : "bg-gray-700 hover:bg-gray-600"
-              }`}
-              title={`Caja ${index + 1}: ${box.width}×${box.height}×${box.depth}`}
-              style={{
-                backgroundColor: index <= currentStep ? box.color : undefined,
-              }}
-            >
-              <span className="text-white text-xs font-bold">{index + 1}</span>
-            </button>
-          ))}
-        </div>
-
         {/* Info de la caja actual */}
         {currentStep < boxes.length && (
-          <div className="mt-4 p-3 bg-gray-700 rounded-lg text-white text-sm">
+          <div className="p-2 bg-slate-600 rounded text-white text-xs">
             <div className="flex items-center gap-2">
               <div
-                className="w-4 h-4 rounded"
+                className="w-3 h-3 rounded"
                 style={{ backgroundColor: boxes[currentStep].color }}
               />
-              <span className="font-semibold">Caja {currentStep + 1}:</span>
-              <span className="text-gray-300">
-                {boxes[currentStep].width} × {boxes[currentStep].height} ×{" "}
-                {boxes[currentStep].depth} unidades
+              <span className="font-semibold">Box {currentStep + 1}:</span>
+              <span className="text-slate-200">
+                {boxes[currentStep].name || boxes[currentStep].id}
+              </span>
+              <span className="text-slate-300">
+                ({boxes[currentStep].width} × {boxes[currentStep].height} ×{" "}
+                {boxes[currentStep].depth} cm, {boxes[currentStep].weight} kg)
               </span>
             </div>
           </div>
@@ -543,4 +506,4 @@ const PackingViewer3D = () => {
   );
 };
 
-export default PackingViewer3D;
+export default PackingViewer3DIntegrated;
