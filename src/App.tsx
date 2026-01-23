@@ -257,23 +257,33 @@ function App() {
                   </span>
                 )}
               </h3>
-              <div className="aspect-video bg-slate-900 rounded-lg overflow-hidden">
-                {packingResult ? (
-                  viewerMode === "animated" ? (
-                    // NEW: Render the animated viewer with actual data
-                    <PackingViewer3DIntegrated result={packingResult} />
+
+              {/* CONTENEDOR CORREGIDO - Quité overflow-hidden del nivel superior */}
+              <div className="bg-slate-900 rounded-lg">
+                <div
+                  className={
+                    viewerMode === "animated"
+                      ? "min-h-[600px]"
+                      : "aspect-video overflow-hidden"
+                  }
+                >
+                  {packingResult ? (
+                    viewerMode === "animated" ? (
+                      // Animated viewer con controles visibles
+                      <PackingViewer3DIntegrated result={packingResult} />
+                    ) : (
+                      // Vista estática original
+                      <ContainerViewer result={packingResult} />
+                    )
                   ) : (
-                    // Original static viewer
-                    <ContainerViewer result={packingResult} />
-                  )
-                ) : (
-                  <div className="flex items-center justify-center h-full text-slate-500">
-                    <div className="text-center">
-                      <div className="text-6xl mb-4">📦</div>
-                      <div>Add boxes and click "Pack" to visualize</div>
+                    <div className="flex items-center justify-center h-full text-slate-500 min-h-[400px]">
+                      <div className="text-center">
+                        <div className="text-6xl mb-4">📦</div>
+                        <div>Add boxes and click "Pack" to visualize</div>
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             </div>
 
