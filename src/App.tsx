@@ -8,7 +8,7 @@ import {
 import { heuristicPacking } from "./algorithms/heuristic";
 import BoxInput from "./components/BoxInput";
 import ContainerViewer from "./components/ContainerViewer";
-import PackingViewer3DIntegrated from "./components/PackingViewer3DIntegrated"; // NEW: Import the integrated 3D viewer
+import PackingViewer3DIntegrated from "./components/PackingViewer3DIntegrated";
 import Statistics from "./components/Statitstics";
 import Controls from "./components/Controls";
 import CSVImport from "./components/CSVImport";
@@ -16,17 +16,42 @@ import ExcelImport from "./components/ExcelImport";
 import PDFPackingInstructions from "./components/PDFPackingInstructions";
 import "./App.css";
 
-const defaultContainer: Container = {
-  id: "container-1",
-  name: "Standard 20ft Container",
-  dimensions: { x: 589, y: 239, z: 235 }, // cm
-  maxWeight: 28000, // kg
-  maxWeightPerLevel: 10000,
-};
+// Contenedores estándar predefinidos
+const STANDARD_CONTAINERS: Container[] = [
+  {
+    id: "container-20ft",
+    name: "20ft Standard",
+    dimensions: { x: 589, y: 239, z: 235 }, // cm
+    maxWeight: 28000, // kg
+    maxWeightPerLevel: 10000,
+  },
+  {
+    id: "container-40ft",
+    name: "40ft Standard",
+    dimensions: { x: 1203, y: 239, z: 235 }, // cm
+    maxWeight: 26500, // kg
+    maxWeightPerLevel: 10000,
+  },
+  {
+    id: "container-40ft-hc",
+    name: "40ft High Cube",
+    dimensions: { x: 1203, y: 269, z: 235 }, // cm
+    maxWeight: 26500, // kg
+    maxWeightPerLevel: 10000,
+  },
+  {
+    id: "container-45ft-hc",
+    name: "45ft High Cube",
+    dimensions: { x: 1354, y: 269, z: 235 }, // cm
+    maxWeight: 27500, // kg
+    maxWeightPerLevel: 10000,
+  },
+];
+
+const defaultContainer = STANDARD_CONTAINERS[0];
 
 function App() {
   const [boxes, setBoxes] = useState<Box[]>([]);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [container, setContainer] = useState<Container>(defaultContainer);
   const [packingResult, setPackingResult] = useState<PackingResult | null>(
     null,
@@ -34,7 +59,7 @@ function App() {
   const [selectedAlgorithm, setSelectedAlgorithm] =
     useState<AlgorithmType>("heuristic");
   const [isLoading, setIsLoading] = useState(false);
-  const [viewerMode, setViewerMode] = useState<"static" | "animated">("static"); // NEW: Toggle between viewers
+  const [viewMode, setViewMode] = useState<"static" | "animated">("static");
 
   const handleAddBox = (box: Box) => {
     setBoxes([...boxes, box]);
@@ -51,6 +76,17 @@ function App() {
   const handleClearAll = () => {
     setBoxes([]);
     setPackingResult(null);
+  };
+
+  const handleContainerChange = (containerId: string) => {
+    const selectedContainer = STANDARD_CONTAINERS.find(
+      (c) => c.id === containerId,
+    );
+    if (selectedContainer) {
+      setContainer(selectedContainer);
+      // Reset packing result when container changes
+      setPackingResult(null);
+    }
   };
 
   const handlePack = async () => {
@@ -146,6 +182,46 @@ function App() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Panel - Input */}
           <div className="lg:col-span-1 space-y-6">
+            {/* Container Selection */}
+            <div className="bg-slate-800 rounded-lg p-6 shadow-xl">
+              <h3 className="text-xl font-semibold text-white mb-4">
+                📦 Container Type
+              </h3>
+              <select
+                value={container.id}
+                onChange={(e) => handleContainerChange(e.target.value)}
+                className="w-full px-4 py-3 bg-slate-700 text-white border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                {STANDARD_CONTAINERS.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name} - {c.dimensions.x}×{c.dimensions.y}×
+                    {c.dimensions.z} cm
+                  </option>
+                ))}
+              </select>
+              <div className="mt-3 p-3 bg-slate-700 rounded-lg text-sm text-slate-300">
+                <p>
+                  <span className="font-semibold">Dimensions:</span>{" "}
+                  {container.dimensions.x} × {container.dimensions.y} ×{" "}
+                  {container.dimensions.z} cm
+                </p>
+                <p>
+                  <span className="font-semibold">Max Weight:</span>{" "}
+                  {container.maxWeight.toLocaleString()} kg
+                </p>
+                <p>
+                  <span className="font-semibold">Volume:</span>{" "}
+                  {(
+                    (container.dimensions.x *
+                      container.dimensions.y *
+                      container.dimensions.z) /
+                    1000000
+                  ).toFixed(2)}{" "}
+                  m³
+                </p>
+              </div>
+            </div>
+
             <BoxInput onAddBox={handleAddBox} />
             <ExcelImport onImport={handleImportBoxes} />
             <CSVImport onImport={handleImportBoxes} />
@@ -197,40 +273,6 @@ function App() {
               boxCount={boxes.length}
             />
 
-            {/* NEW: Viewer Mode Toggle */}
-            {packingResult && (
-              <div className="bg-slate-800 rounded-lg p-6 shadow-xl">
-                <h3 className="text-xl font-semibold text-white mb-4">
-                  🎬 Viewer Mode
-                </h3>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setViewerMode("static")}
-                    className={`flex-1 py-2 rounded transition-colors ${
-                      viewerMode === "static"
-                        ? "bg-blue-600 text-white"
-                        : "bg-slate-700 text-slate-300 hover:bg-slate-600"
-                    }`}
-                  >
-                    📊 Static View
-                  </button>
-                  <button
-                    onClick={() => setViewerMode("animated")}
-                    className={`flex-1 py-2 rounded transition-colors ${
-                      viewerMode === "animated"
-                        ? "bg-blue-600 text-white"
-                        : "bg-slate-700 text-slate-300 hover:bg-slate-600"
-                    }`}
-                  >
-                    🎬 Animation
-                  </button>
-                </div>
-                <p className="mt-3 text-xs text-slate-400 text-center">
-                  Switch between static overview and step-by-step animation
-                </p>
-              </div>
-            )}
-
             {/* PDF Button - Only visible when there's a result */}
             {packingResult && (
               <div className="bg-slate-800 rounded-lg p-6 shadow-xl">
@@ -249,41 +291,53 @@ function App() {
           {/* Right Panel - Visualization */}
           <div className="lg:col-span-2 space-y-6">
             <div className="bg-slate-800 rounded-lg p-6 shadow-xl">
-              <h3 className="text-xl font-semibold text-white mb-4">
-                3D Visualization
-                {packingResult && viewerMode === "animated" && (
-                  <span className="ml-2 text-sm text-blue-400">
-                    (Interactive Animation)
-                  </span>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-semibold text-white">
+                  3D Visualization
+                </h3>
+                {/* Toggle between static and animated view */}
+                {packingResult && (
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setViewMode("static")}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        viewMode === "static"
+                          ? "bg-blue-600 text-white"
+                          : "bg-slate-700 text-slate-300 hover:bg-slate-600"
+                      }`}
+                    >
+                      📦 Static View
+                    </button>
+                    <button
+                      onClick={() => setViewMode("animated")}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        viewMode === "animated"
+                          ? "bg-blue-600 text-white"
+                          : "bg-slate-700 text-slate-300 hover:bg-slate-600"
+                      }`}
+                    >
+                      🎬 Interactive Animation
+                    </button>
+                  </div>
                 )}
-              </h3>
-
-              {/* CONTENEDOR CORREGIDO - Quité overflow-hidden del nivel superior */}
-              <div className="bg-slate-900 rounded-lg">
-                <div
-                  className={
-                    viewerMode === "animated"
-                      ? "min-h-[600px]"
-                      : "aspect-video overflow-hidden"
-                  }
-                >
-                  {packingResult ? (
-                    viewerMode === "animated" ? (
-                      // Animated viewer con controles visibles
-                      <PackingViewer3DIntegrated result={packingResult} />
-                    ) : (
-                      // Vista estática original
-                      <ContainerViewer result={packingResult} />
-                    )
+              </div>
+              <div
+                className={`bg-slate-900 rounded-lg ${viewMode === "animated" ? "" : "aspect-video overflow-hidden"}`}
+              >
+                {packingResult ? (
+                  viewMode === "static" ? (
+                    <ContainerViewer result={packingResult} />
                   ) : (
-                    <div className="flex items-center justify-center h-full text-slate-500 min-h-[400px]">
-                      <div className="text-center">
-                        <div className="text-6xl mb-4">📦</div>
-                        <div>Add boxes and click "Pack" to visualize</div>
-                      </div>
+                    <PackingViewer3DIntegrated result={packingResult} />
+                  )
+                ) : (
+                  <div className="flex items-center justify-center aspect-video text-slate-500">
+                    <div className="text-center">
+                      <div className="text-6xl mb-4">📦</div>
+                      <div>Add boxes and click "Pack" to visualize</div>
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
             </div>
 

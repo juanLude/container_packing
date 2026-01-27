@@ -1,7 +1,7 @@
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, Box as ThreeBox, Text } from "@react-three/drei";
 import { PackingResult, PlacedBox } from "../algorithms/types";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 
 interface ContainerViewerProps {
   result: PackingResult;
@@ -14,9 +14,28 @@ export default function ContainerViewer({ result }: ContainerViewerProps) {
   // Scale factor for better visualization (convert cm to units)
   const scale = 0.01;
 
+  // Calculate dimensions in scaled units
+  const containerWidth = container.dimensions.x * scale;
+  const containerHeight = container.dimensions.y * scale;
+  const containerDepth = container.dimensions.z * scale;
+
+  // Calculate optimal camera distance based on container size
+  const maxDimension = Math.max(
+    containerWidth,
+    containerHeight,
+    containerDepth,
+  );
+  const cameraDistance = maxDimension * 1.5;
+
+  // Calculate ground plane size (should be larger than container)
+  const groundSize = Math.max(containerWidth, containerDepth) * 2.5;
+
   return (
     <Canvas
-      camera={{ position: [8, 6, 8], fov: 50 }}
+      camera={{
+        position: [cameraDistance, cameraDistance * 0.75, cameraDistance],
+        fov: 50,
+      }}
       style={{ background: "#0f172a" }}
     >
       <ambientLight intensity={0.5} />
@@ -26,18 +45,29 @@ export default function ContainerViewer({ result }: ContainerViewerProps) {
       <OrbitControls
         enableDamping
         dampingFactor={0.05}
-        minDistance={5}
-        maxDistance={30}
+        minDistance={maxDimension * 0.5}
+        maxDistance={maxDimension * 3}
       />
 
       {/* Container outline */}
       <ContainerOutline dimensions={container.dimensions} scale={scale} />
 
-      {/* Ground plane */}
+      {/* Ground plane - dynamically sized */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
-        <planeGeometry args={[20, 20]} />
+        <planeGeometry args={[groundSize, groundSize]} />
         <meshStandardMaterial color="#1e293b" />
       </mesh>
+
+      {/* Grid helper - dynamically sized */}
+      <gridHelper
+        args={[
+          groundSize,
+          Math.max(10, Math.floor(groundSize / 2)),
+          "#555555",
+          "#333333",
+        ]}
+        position={[0, 0.01, 0]}
+      />
 
       {/* Packed boxes */}
       {packedBoxes.map((box) => (
