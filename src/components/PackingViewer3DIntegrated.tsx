@@ -1,9 +1,85 @@
 import React, { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
-import { PackingResult } from "../algorithms/types";
+import { PackingResult, Box } from "../algorithms/types";
 
 interface PackingViewer3DIntegratedProps {
   result: PackingResult;
+}
+
+// Interfaz para caja en animación
+interface AnimatedBox {
+  id: string;
+  width: number;
+  height: number;
+  depth: number;
+  x: number;
+  y: number;
+  z: number;
+  color: string;
+  name?: string;
+  weight: number;
+  isPacked: boolean;
+}
+
+// Función para calcular posiciones de cajas no empacadas apiladas
+function calculateStackedUnpackedPositions(
+  unpackedBoxes: Box[],
+  containerDimensions: { x: number; y: number; z: number },
+): AnimatedBox[] {
+  const stackedBoxes: AnimatedBox[] = [];
+
+  // Posición del rincón (esquina trasera derecha)
+  const cornerX = containerDimensions.x + 200; // 200 cm de separación
+  const cornerZ = containerDimensions.z + 200;
+
+  let currentX = cornerX;
+  let currentY = 0;
+  let currentZ = cornerZ;
+  let rowMaxHeight = 0;
+  let layerMaxDepth = 0;
+
+  const maxRowWidth = 800; // 8 metros de ancho máximo
+
+  for (const box of unpackedBoxes) {
+    const boxWidth = box.dimensions.x;
+    const boxHeight = box.dimensions.y;
+    const boxDepth = box.dimensions.z;
+
+    // Si no cabe en la fila actual, nueva fila
+    if (currentX + boxWidth - cornerX > maxRowWidth) {
+      currentX = cornerX;
+      currentZ += layerMaxDepth;
+      layerMaxDepth = 0;
+
+      // Si no cabe en profundidad, subir nivel
+      if (currentZ + boxDepth - cornerZ > maxRowWidth) {
+        currentZ = cornerZ;
+        currentY += rowMaxHeight;
+        rowMaxHeight = 0;
+      }
+    }
+
+    stackedBoxes.push({
+      id: box.id,
+      width: box.dimensions.x,
+      height: box.dimensions.y,
+      depth: box.dimensions.z,
+      x: currentX,
+      y: currentY,
+      z: currentZ,
+      color:
+        box.color || `#${Math.floor(Math.random() * 16777215).toString(16)}`,
+      name: box.name,
+      weight: box.weight,
+      isPacked: false,
+    });
+
+    currentX += boxWidth;
+    rowMaxHeight = Math.max(rowMaxHeight, boxHeight);
+    layerMaxDepth = Math.max(layerMaxDepth, boxDepth);
+  }
+
+  return stackedBoxes;
 }
 
 const PackingViewer3DIntegrated: React.FC<PackingViewer3DIntegratedProps> = ({
@@ -39,7 +115,7 @@ const PackingViewer3DIntegrated: React.FC<PackingViewer3DIntegratedProps> = ({
     depth: result.container.dimensions.z,
   };
 
-  const boxes = result.packedBoxes.map((box) => ({
+  const packedBoxes: AnimatedBox[] = result.packedBoxes.map((box) => ({
     id: box.id,
     width: box.dimensions.x,
     height: box.dimensions.y,
@@ -50,9 +126,23 @@ const PackingViewer3DIntegrated: React.FC<PackingViewer3DIntegratedProps> = ({
     color: box.color || `#${Math.floor(Math.random() * 16777215).toString(16)}`,
     name: box.name,
     weight: box.weight,
+    isPacked: true,
   }));
 
-  const totalSteps = boxes.length;
+  const unpackedBoxes: Box[] = result.unpackedBoxes || [];
+  const stackedUnpackedBoxes = calculateStackedUnpackedPositions(
+    unpackedBoxes,
+    {
+      x: containerDimensions.width,
+      y: containerDimensions.height,
+      z: containerDimensions.depth,
+    },
+  );
+
+  // Combinar cajas empacadas y no empacadas para la animación
+  const allBoxes: AnimatedBox[] = [...packedBoxes, ...stackedUnpackedBoxes];
+
+  const totalSteps = allBoxes.length;
 
   // Inicializar Three.js
   useEffect(() => {
@@ -94,10 +184,10 @@ const PackingViewer3DIntegrated: React.FC<PackingViewer3DIntegratedProps> = ({
       containerDimensions.depth,
     );
     directionalLight.castShadow = true;
-    directionalLight.shadow.camera.left = -containerDimensions.width;
-    directionalLight.shadow.camera.right = containerDimensions.width * 2;
+    directionalLight.shadow.camera.left = -containerDimensions.width * 2;
+    directionalLight.shadow.camera.right = containerDimensions.width * 3;
     directionalLight.shadow.camera.top = containerDimensions.height * 2;
-    directionalLight.shadow.camera.bottom = -containerDimensions.depth;
+    directionalLight.shadow.camera.bottom = -containerDimensions.depth * 2;
     scene.add(directionalLight);
 
     // Contenedor
@@ -118,11 +208,12 @@ const PackingViewer3DIntegrated: React.FC<PackingViewer3DIntegratedProps> = ({
     );
     scene.add(containerLines);
 
-    // Piso del contenedor
-    const floorGeometry = new THREE.PlaneGeometry(
-      containerDimensions.width,
-      containerDimensions.depth,
+    // Piso más grande para incluir área de cajas no empacadas
+    const floorSize = Math.max(
+      containerDimensions.width * 3,
+      containerDimensions.depth * 3,
     );
+    const floorGeometry = new THREE.PlaneGeometry(floorSize, floorSize);
     const floorMaterial = new THREE.MeshStandardMaterial({
       color: 0x2d3436,
       transparent: true,
@@ -130,23 +221,31 @@ const PackingViewer3DIntegrated: React.FC<PackingViewer3DIntegratedProps> = ({
     });
     const floor = new THREE.Mesh(floorGeometry, floorMaterial);
     floor.rotation.x = -Math.PI / 2;
-    floor.position.set(
-      containerDimensions.width / 2,
-      0,
-      containerDimensions.depth / 2,
-    );
+    floor.position.set(0, 0, 0);
     floor.receiveShadow = true;
     scene.add(floor);
 
     // Grid helper
-    const gridHelper = new THREE.GridHelper(
-      Math.max(containerDimensions.width, containerDimensions.depth),
-      10,
-      0x555555,
-      0x333333,
-    );
+    const gridHelper = new THREE.GridHelper(floorSize, 20, 0x555555, 0x333333);
     gridHelper.position.y = 0;
     scene.add(gridHelper);
+
+    // Marcador de área de cajas no empacadas
+    if (unpackedBoxes.length > 0) {
+      const cornerX = containerDimensions.width + 200;
+      const cornerZ = containerDimensions.depth + 200;
+
+      // Agregar marcador visual
+      const markerGeometry = new THREE.BoxGeometry(50, 300, 50);
+      const markerMaterial = new THREE.MeshBasicMaterial({
+        color: 0xff0000,
+        transparent: true,
+        opacity: 0.3,
+      });
+      const marker = new THREE.Mesh(markerGeometry, markerMaterial);
+      marker.position.set(cornerX + 400, 150, cornerZ + 400);
+      scene.add(marker);
+    }
 
     // Animación
     const animate = () => {
@@ -233,7 +332,7 @@ const PackingViewer3DIntegrated: React.FC<PackingViewer3DIntegratedProps> = ({
     const minDistance =
       Math.max(containerDimensions.width, containerDimensions.depth) * 0.5;
     const maxDistance =
-      Math.max(containerDimensions.width, containerDimensions.depth) * 4;
+      Math.max(containerDimensions.width, containerDimensions.depth) * 5;
     setCameraDistance((prev) =>
       Math.max(minDistance, Math.min(maxDistance, prev + e.deltaY * 0.5)),
     );
@@ -264,13 +363,22 @@ const PackingViewer3DIntegrated: React.FC<PackingViewer3DIntegratedProps> = ({
 
     // Cajas completadas
     for (let i = 0; i < currentStep; i++) {
-      const box = boxes[i];
+      const box = allBoxes[i];
       const geometry = new THREE.BoxGeometry(box.width, box.height, box.depth);
+
+      // Color diferente para cajas no empacadas
+      const baseColor = box.color;
+      const opacity = box.isPacked ? 0.8 : 0.5;
+      const emissive = box.isPacked ? 0x000000 : 0xff0000;
+
       const material = new THREE.MeshStandardMaterial({
-        color: box.color,
+        color: baseColor,
         transparent: true,
-        opacity: 0.8,
+        opacity: opacity,
+        emissive: emissive,
+        emissiveIntensity: box.isPacked ? 0 : 0.2,
       });
+
       const mesh = new THREE.Mesh(geometry, material);
       mesh.position.set(
         box.x + box.width / 2,
@@ -280,9 +388,13 @@ const PackingViewer3DIntegrated: React.FC<PackingViewer3DIntegratedProps> = ({
       mesh.castShadow = true;
       mesh.receiveShadow = true;
 
-      // Agregar bordes
+      // Bordes - rojos para no empacadas, negros para empacadas
       const edges = new THREE.EdgesGeometry(geometry);
-      const edgesMaterial = new THREE.LineBasicMaterial({ color: 0x000000 });
+      const edgesColor = box.isPacked ? 0x000000 : 0xff0000;
+      const edgesMaterial = new THREE.LineBasicMaterial({
+        color: edgesColor,
+        linewidth: box.isPacked ? 1 : 2,
+      });
       const edgesMesh = new THREE.LineSegments(edges, edgesMaterial);
       mesh.add(edgesMesh);
 
@@ -291,8 +403,8 @@ const PackingViewer3DIntegrated: React.FC<PackingViewer3DIntegratedProps> = ({
     }
 
     // Caja animada actual
-    if (currentStep < boxes.length) {
-      const box = boxes[currentStep];
+    if (currentStep < allBoxes.length) {
+      const box = allBoxes[currentStep];
       const easedProgress = easeInOutCubic(animationProgress);
 
       const startY = containerDimensions.height + box.height + 50;
@@ -300,13 +412,21 @@ const PackingViewer3DIntegrated: React.FC<PackingViewer3DIntegratedProps> = ({
       const currentY = startY + (endY - startY) * easedProgress;
 
       const geometry = new THREE.BoxGeometry(box.width, box.height, box.depth);
+
+      const baseColor = box.color;
+      const baseOpacity = box.isPacked ? 0.6 : 0.4;
+      const emissive = box.isPacked
+        ? new THREE.Color(box.color)
+        : new THREE.Color(0xff0000);
+
       const material = new THREE.MeshStandardMaterial({
-        color: box.color,
+        color: baseColor,
         transparent: true,
-        opacity: 0.6 + 0.4 * easedProgress,
-        emissive: new THREE.Color(box.color),
+        opacity: baseOpacity + 0.4 * easedProgress,
+        emissive: emissive,
         emissiveIntensity: 0.3 * (1 - easedProgress),
       });
+
       const mesh = new THREE.Mesh(geometry, material);
       mesh.position.set(box.x + box.width / 2, currentY, box.z + box.depth / 2);
       mesh.castShadow = true;
@@ -315,16 +435,20 @@ const PackingViewer3DIntegrated: React.FC<PackingViewer3DIntegratedProps> = ({
       // Rotación sutil durante la caída
       mesh.rotation.y = (1 - easedProgress) * 0.3;
 
-      // Agregar bordes
+      // Bordes
       const edges = new THREE.EdgesGeometry(geometry);
-      const edgesMaterial = new THREE.LineBasicMaterial({ color: 0x000000 });
+      const edgesColor = box.isPacked ? 0x000000 : 0xff0000;
+      const edgesMaterial = new THREE.LineBasicMaterial({
+        color: edgesColor,
+        linewidth: box.isPacked ? 1 : 2,
+      });
       const edgesMesh = new THREE.LineSegments(edges, edgesMaterial);
       mesh.add(edgesMesh);
 
       scene.add(mesh);
       boxMeshesRef.current.push(mesh);
     }
-  }, [currentStep, animationProgress, boxes]);
+  }, [currentStep, animationProgress, allBoxes]);
 
   // Loop de animación
   useEffect(() => {
@@ -336,7 +460,7 @@ const PackingViewer3DIntegrated: React.FC<PackingViewer3DIntegratedProps> = ({
         const newProgress = prev + increment;
 
         if (newProgress >= 1) {
-          if (currentStep < boxes.length - 1) {
+          if (currentStep < allBoxes.length - 1) {
             setCurrentStep(currentStep + 1);
             return 0;
           } else {
@@ -349,7 +473,7 @@ const PackingViewer3DIntegrated: React.FC<PackingViewer3DIntegratedProps> = ({
     }, 16);
 
     return () => clearInterval(interval);
-  }, [isPlaying, currentStep, speed, boxes.length]);
+  }, [isPlaying, currentStep, speed, allBoxes.length]);
 
   // Controles
   const play = () => setIsPlaying(true);
@@ -386,6 +510,11 @@ const PackingViewer3DIntegrated: React.FC<PackingViewer3DIntegratedProps> = ({
         <p className="font-semibold mb-1">🎮 Controls:</p>
         <p>🖱️ Click + Drag: Rotate</p>
         <p>🔄 Scroll: Zoom</p>
+        {unpackedBoxes.length > 0 && (
+          <p className="mt-2 text-red-400">
+            ⚠️ {unpackedBoxes.length} unpacked boxes in corner
+          </p>
+        )}
       </div>
 
       {/* Panel de controles */}
@@ -483,22 +612,43 @@ const PackingViewer3DIntegrated: React.FC<PackingViewer3DIntegratedProps> = ({
         </div>
 
         {/* Info de la caja actual */}
-        {currentStep < boxes.length && (
-          <div className="p-2 bg-slate-600 rounded text-white text-xs">
+        {currentStep < allBoxes.length && (
+          <div
+            className={`p-2 rounded text-white text-xs ${
+              allBoxes[currentStep].isPacked
+                ? "bg-slate-600"
+                : "bg-red-900/50 border border-red-500"
+            }`}
+          >
             <div className="flex items-center gap-2">
               <div
                 className="w-3 h-3 rounded"
-                style={{ backgroundColor: boxes[currentStep].color }}
+                style={{ backgroundColor: allBoxes[currentStep].color }}
               />
-              <span className="font-semibold">Box {currentStep + 1}:</span>
+              <span className="font-semibold">
+                {allBoxes[currentStep].isPacked ? "📦 Packing" : "⚠️ Unpacked"}{" "}
+                Box {currentStep + 1}:
+              </span>
               <span className="text-slate-200">
-                {boxes[currentStep].name || boxes[currentStep].id}
+                {allBoxes[currentStep].name || allBoxes[currentStep].id}
               </span>
               <span className="text-slate-300">
-                ({boxes[currentStep].width} × {boxes[currentStep].height} ×{" "}
-                {boxes[currentStep].depth} cm, {boxes[currentStep].weight} kg)
+                ({allBoxes[currentStep].width} × {allBoxes[currentStep].height}{" "}
+                × {allBoxes[currentStep].depth} cm,{" "}
+                {allBoxes[currentStep].weight} kg)
               </span>
             </div>
+          </div>
+        )}
+
+        {/* Resumen de cajas no empacadas */}
+        {unpackedBoxes.length > 0 && (
+          <div className="mt-3 p-3 bg-red-900/30 border border-red-500 rounded text-red-200 text-xs">
+            <p className="font-semibold mb-1">⚠️ Unpacked Boxes Summary:</p>
+            <p>{unpackedBoxes.length} box(es) couldn't fit in the container</p>
+            <p className="text-red-300 mt-1">
+              They are stacked in the corner area (red borders)
+            </p>
           </div>
         )}
       </div>
