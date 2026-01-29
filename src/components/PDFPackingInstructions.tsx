@@ -355,6 +355,7 @@ const PDFPackingInstructions: React.FC<PDFPackingInstructionsProps> = ({
       <body>
         <div class="header">
           <h1>📦 Container Loading Instructions</h1>
+        
           <p class="subtitle">${result.container.name}</p>
           <p class="date">Generated: ${currentDate}</p>
         </div>
@@ -365,8 +366,8 @@ const PDFPackingInstructions: React.FC<PDFPackingInstructionsProps> = ({
             <div class="summary-item">
               <div class="label">Dimensions (L × H × D)</div>
               <div class="value">${result.container.dimensions.x} × ${
-      result.container.dimensions.y
-    } × ${result.container.dimensions.z} cm</div>
+                result.container.dimensions.y
+              } × ${result.container.dimensions.z} cm</div>
             </div>
             <div class="summary-item">
               <div class="label">Weight Capacity</div>
@@ -380,6 +381,8 @@ const PDFPackingInstructions: React.FC<PDFPackingInstructionsProps> = ({
                   result.container.dimensions.z) /
                 1000000
               ).toFixed(2)} m³</div>
+        
+
             </div>
             <div class="summary-item">
               <div class="label">Container ID</div>
@@ -395,9 +398,13 @@ const PDFPackingInstructions: React.FC<PDFPackingInstructionsProps> = ({
               <div class="stat-value">${result.packedBoxes.length}</div>
             </div>
             <div class="stat-item">
+              <div class="stat-label">Unpacked Boxes</div>
+              <div class="stat-value">${result.unpackedBoxes.length}</div>
+            </div>
+            <div class="stat-item">
               <div class="stat-label">Volume Utilization</div>
               <div class="stat-value">${result.volumeUtilization.toFixed(
-                1
+                1,
               )}%</div>
             </div>
             <div class="stat-item">
@@ -516,14 +523,14 @@ const PDFPackingInstructions: React.FC<PDFPackingInstructionsProps> = ({
                         return `
                           <!-- Box representation -->
                           <rect x="${boxX}" y="${
-                          boxY - boxHeight
-                        }" width="${boxWidth}" height="${boxHeight}" 
+                            boxY - boxHeight
+                          }" width="${boxWidth}" height="${boxHeight}" 
                                 fill="#3b82f6" fill-opacity="0.3" stroke="#2563eb" stroke-width="2"/>
                           
                           <!-- Box label -->
                           <text x="${boxX + boxWidth / 2}" y="${
-                          boxY - boxHeight / 2
-                        }" 
+                            boxY - boxHeight / 2
+                          }" 
                                 text-anchor="middle" font-size="11" fill="#1e40af" font-weight="bold">This Box</text>
                           
                           <!-- Position marker -->
@@ -536,16 +543,16 @@ const PDFPackingInstructions: React.FC<PDFPackingInstructionsProps> = ({
                           <text x="${
                             (50 + boxX) / 2
                           }" y="270" text-anchor="middle" font-size="10" fill="#f59e0b" font-weight="bold">X: ${
-                          box.position.x
-                        } cm</text>
+                            box.position.x
+                          } cm</text>
                           
                           <!-- Y dimension -->
                           <line x1="45" y1="250" x2="45" y2="${boxY}" stroke="#8b5cf6" stroke-width="2" marker-end="url(#arrowhead)"/>
                           <text x="35" y="${
                             (250 + boxY) / 2
                           }" text-anchor="middle" font-size="10" fill="#8b5cf6" font-weight="bold" transform="rotate(-90 35 ${
-                          (250 + boxY) / 2
-                        })">Y: ${box.position.y} cm</text>
+                            (250 + boxY) / 2
+                          })">Y: ${box.position.y} cm</text>
                         `;
                       })()}
                       
@@ -579,7 +586,7 @@ const PDFPackingInstructions: React.FC<PDFPackingInstructionsProps> = ({
                 </div>
               </div>
             </div>
-          `
+          `,
             )
             .join("")}
         </div>
@@ -601,7 +608,7 @@ const PDFPackingInstructions: React.FC<PDFPackingInstructionsProps> = ({
                   } cm, 
                   ${box.weight} kg
                 </div>
-              `
+              `,
                 )
                 .join("")}
             </div>
@@ -620,10 +627,10 @@ const PDFPackingInstructions: React.FC<PDFPackingInstructionsProps> = ({
             <li><strong>Stacking restrictions:</strong> Respect "DO NOT STACK" indications to avoid damage.</li>
             <li><strong>Weight distribution:</strong> Total container weight is ${result.totalWeight.toLocaleString()} kg. Ensure even distribution.</li>
             <li><strong>Center of gravity:</strong> Calculated position: X=${result.centerOfGravity.x.toFixed(
-              1
+              1,
             )}cm, Y=${result.centerOfGravity.y.toFixed(
-      1
-    )}cm, Z=${result.centerOfGravity.z.toFixed(1)}cm</li>
+              1,
+            )}cm, Z=${result.centerOfGravity.z.toFixed(1)}cm</li>
             <li><strong>Stability:</strong> ${
               result.isStable
                 ? "✅ The container is balanced and stable."
@@ -636,7 +643,7 @@ const PDFPackingInstructions: React.FC<PDFPackingInstructionsProps> = ({
           <p><strong>Container Packing Optimizer</strong></p>
           <p>Automatically generated document - ${currentDate}</p>
           <p>Algorithm used: Heuristic Packing | Computation time: ${result.packingTime.toFixed(
-            2
+            2,
           )}ms</p>
           <p>© ${new Date().getFullYear()} - All rights reserved</p>
         </div>
@@ -671,7 +678,7 @@ const PDFPackingInstructions: React.FC<PDFPackingInstructionsProps> = ({
       console.error("Error generating PDF:", error);
       setIsGenerating(false);
       alert(
-        "An error occurred while generating the instructions. Please try again."
+        "An error occurred while generating the instructions. Please try again.",
       );
     }
   };
